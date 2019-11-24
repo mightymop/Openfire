@@ -629,19 +629,22 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
                 // Do nothing if we are in a cluster and this JVM is not the senior cluster member
                 return;
             }
-            try {
-                Date cleanUpDate = getCleanupDate();
-                Iterator<LocalMUCRoom> it = localMUCRoomManager.getRooms().iterator();
-                while (it.hasNext()) {
-                    LocalMUCRoom room = it.next();
-                    Date emptyDate = room.getEmptyDate();
-                    if (emptyDate != null && emptyDate.before(cleanUpDate)) {
-                        removeChatRoom(room.getName());
+            if (JiveGlobals.getBooleanProperty( "xmpp.muc.cleanup", true))
+            	{
+                    try {            
+                        Date cleanUpDate = getCleanupDate();
+                        Iterator<LocalMUCRoom> it = localMUCRoomManager.getRooms().iterator();
+                        while (it.hasNext()) {
+                            LocalMUCRoom room = it.next();
+                            Date emptyDate = room.getEmptyDate();
+                            if (emptyDate != null && emptyDate.before(cleanUpDate)) {
+                                removeChatRoom(room.getName());
+                            }
+                        }
                     }
-                }
-            }
-            catch (final Throwable e) {
-                Log.error(LocaleUtils.getLocalizedString("admin.error"), e);
+                    catch (final Throwable e) {
+                        Log.error(LocaleUtils.getLocalizedString("admin.error"), e);
+                    }
             }
         }
     }
