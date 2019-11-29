@@ -151,7 +151,7 @@
         }
     }
     
-    final String muckeep = JiveGlobals.getProperty("xmpp.muc.cleanup", "false");
+    final String muckeep = JiveGlobals.getProperty("xmpp.muc.cleanup", "true");
 	String muccleanupdays = MUCPersistenceManager.getProperty(mucname, "unload.empty_days");
 	if (muccleanupdays == null) {
 		muccleanupdays = "30";
