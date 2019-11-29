@@ -70,6 +70,7 @@ import org.jivesoftware.openfire.muc.cluster.UpdatePresence;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveConstants;
+import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.LocaleUtils;
 import org.jivesoftware.util.NotFoundException;
 import org.jivesoftware.util.cache.CacheFactory;
@@ -435,6 +436,14 @@ public class LocalMUCRoom implements MUCRoom, GroupEventListener {
 
     @Override
     public void setEmptyDate(Date emptyDate) {
+        
+        if (!JiveGlobals.getBooleanProperty("xmpp.muc.cleanup",true))
+        {
+            this.emptyDate = null;  
+            MUCPersistenceManager.updateRoomEmptyDate(this);
+            return;
+        }
+        
         // Do nothing if old value is same as new value
         if (this.emptyDate == emptyDate) {
             return;
