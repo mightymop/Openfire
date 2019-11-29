@@ -90,7 +90,7 @@
         } else
             bmuckeep = false;
 
-        JiveGlobals.setProperty("xmpp.muc.cleanup", bmuckeep ? "true" : "false");
+        JiveGlobals.setProperty("xmpp.muc.cleanup", bmuckeep ? "false" : "true");
 
         if (bmuckeep) {
             List<MultiUserChatService> lmucs = webManager.getMultiUserChatManager().getMultiUserChatServices();
@@ -269,7 +269,7 @@
                    <fmt:message key="groupchat.service.properties.label_service_muckeep" />
                 </td>
                 <td>
-                    <input type="checkbox" name="muckeep" <%= muckeep.equalsIgnoreCase("true") ? "checked" : "" %> onClick="checkMUCKeep();">
+                    <input type="checkbox" name="muckeep" <%= muckeep.equalsIgnoreCase("false") ? "checked" : "" %> onClick="checkMUCKeep();">
                 </td>
             </tr>
             <tr>
