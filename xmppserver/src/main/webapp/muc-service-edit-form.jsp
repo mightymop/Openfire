@@ -20,6 +20,10 @@
                  org.jivesoftware.util.ParamUtils,
                  org.jivesoftware.util.CookieUtils,
                  org.jivesoftware.util.AlreadyExistsException,
+                 org.jivesoftware.util.JiveGlobals,
+                 org.jivesoftware.openfire.muc.spi.MUCPersistenceManager,
+                 org.jivesoftware.openfire.muc.MultiUserChatService,
+                 org.jivesoftware.openfire.muc.MUCRoom,
                  java.util.*"
     errorPage="error.jsp"
 %>
@@ -75,6 +79,42 @@
         // Make sure that the MUC Service is lower cased.
         mucname = mucname.toLowerCase();
 
+        String muccleanupdays = ParamUtils.getParameter(request, "muccleanupdays");
+        if (muccleanupdays != null) {
+            MUCPersistenceManager.setProperty(mucname, "unload.empty_days", muccleanupdays);
+        }
+
+        boolean bmuckeep = false;
+        if (ParamUtils.getParameter(request, "muckeep") != null) {
+            bmuckeep = ParamUtils.getParameter(request, "muckeep").equalsIgnoreCase("on") ? true : false;
+        } else
+            bmuckeep = false;
+
+        JiveGlobals.setProperty("xmpp.muc.cleanup", bmuckeep ? "true" : "false");
+
+        if (bmuckeep) {
+            List<MultiUserChatService> lmucs = webManager.getMultiUserChatManager().getMultiUserChatServices();
+            for (MultiUserChatService csrv : lmucs) {
+                List<MUCRoom> lmucrooms = csrv.getChatRooms();
+                for (MUCRoom mroom : lmucrooms) {
+                    mroom.setEmptyDate(null);
+                    mroom.saveToDB();
+                }
+            }
+        } else {
+            Date aktDate = new Date();
+            List<MultiUserChatService> lmucs = webManager.getMultiUserChatManager().getMultiUserChatServices();
+            for (MultiUserChatService csrv : lmucs) {
+                List<MUCRoom> lmucrooms = csrv.getChatRooms();
+                for (MUCRoom mroom : lmucrooms) {
+                    if (mroom.getOccupantsCount() == 0 && mroom.getEmptyDate() == null) {
+                        mroom.setEmptyDate(aktDate);
+                        mroom.saveToDB();
+                    }
+                }
+            }
+        }
+
         // do validation
         if (mucname == null || mucname.indexOf('.') >= 0 || mucname.length() < 1) {
             errors.put("mucname","mucname");
@@ -110,6 +150,12 @@
             }
         }
     }
+    
+    final String muckeep = JiveGlobals.getProperty("xmpp.muc.cleanup", "false");
+	String muccleanupdays = MUCPersistenceManager.getProperty(mucname, "unload.empty_days");
+	if (muccleanupdays == null) {
+		muccleanupdays = "30";
+	}
 %>
 
 <html>
@@ -121,7 +167,20 @@
 <meta name="subPageID" content="muc-service-edit-form"/>
 <meta name="extraParams" content="<%= "mucname="+URLEncoder.encode(mucname, "UTF-8") %>"/>
 <% } %>
-<meta name="helpPage" content="edit_group_chat_service_properties.html"/>
+<meta name="helpPage" content="edit_group_chat_service_properties.html"/>    
+<script>
+	function checkMUCKeep() {
+		var checkedValue = null;
+		var inputKeeps = document.getElementsByName('muckeep');
+		var inputCleanups = document.getElementsByName('muccleanupdays');
+
+		if (inputKeeps[0].checked) {
+			inputCleanups[0].disabled = true;
+		} else {
+			inputCleanups[0].disabled = false;
+		}
+	}
+</script>
 </head>
 <body>
 
@@ -203,6 +262,22 @@
                 </td>
                 <td>
                     <input type="text" size="30" maxlength="150" name="mucdesc" value="<%= (mucdesc != null ? StringUtils.escapeForXML(mucdesc) : "") %>">
+                </td>
+            </tr>
+            <tr>
+                <td class="c1">
+                   <fmt:message key="groupchat.service.properties.label_service_muckeep" />
+                </td>
+                <td>
+                    <input type="checkbox" name="muckeep" <%= muckeep.equalsIgnoreCase("true") ? "checked" : "" %> onClick="checkMUCKeep();">
+                </td>
+            </tr>
+            <tr>
+                <td class="c1">
+                   <fmt:message key="groupchat.service.properties.label_service_cleanupdays" />
+                </td>
+                <td>
+                    <input type="number" size="4" maxlength="3" name="muccleanupdays" <%= muckeep.equalsIgnoreCase("true") ? "disabled" : "" %> value="<%= (muccleanupdays != null ? StringUtils.escapeForXML(muccleanupdays) : "") %>">
                 </td>
             </tr>
         </table>
