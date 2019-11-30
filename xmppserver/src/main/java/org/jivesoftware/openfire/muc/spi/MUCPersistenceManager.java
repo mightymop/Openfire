@@ -505,7 +505,7 @@ public class MUCPersistenceManager {
         ResultSet resultSet = null;
         try {
             connection = DbConnectionManager.getConnection();
-            if (JiveGlobals.getBooleanProperty( "xmpp.muc.cleanup", true )) 
+            if (!JiveGlobals.getBooleanProperty( "xmpp.muc.xmpp.muc.keep_from_cleanup", false )) 
             {
             	 statement = connection.prepareStatement(LOAD_ALL_ROOMS);
             	 statement.setLong(1, serviceID);
