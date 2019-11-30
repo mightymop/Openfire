@@ -90,7 +90,7 @@
         } else
             bmuckeep = false;
 
-        JiveGlobals.setProperty("xmpp.muc.cleanup", bmuckeep ? "false" : "true");
+        JiveGlobals.setProperty("xmpp.muc.keep_from_cleanup", bmuckeep ? "true" : "false");
 
         if (bmuckeep) {
             List<MultiUserChatService> lmucs = webManager.getMultiUserChatManager().getMultiUserChatServices();
@@ -151,7 +151,7 @@
         }
     }
     
-    final String muckeep = JiveGlobals.getProperty("xmpp.muc.cleanup", "true");
+    final String muckeep = JiveGlobals.getProperty("xmpp.muc.keep_from_cleanup", "false");
 	String muccleanupdays = MUCPersistenceManager.getProperty(mucname, "unload.empty_days");
 	if (muccleanupdays == null) {
 		muccleanupdays = "30";
@@ -269,7 +269,7 @@
                    <fmt:message key="groupchat.service.properties.label_service_muckeep" />
                 </td>
                 <td>
-                    <input type="checkbox" name="muckeep" <%= muckeep.equalsIgnoreCase("false") ? "checked" : "" %> onClick="checkMUCKeep();">
+                    <input type="checkbox" name="muckeep" <%= muckeep.equalsIgnoreCase("true") ? "checked" : "" %> onClick="checkMUCKeep();">
                 </td>
             </tr>
             <tr>
