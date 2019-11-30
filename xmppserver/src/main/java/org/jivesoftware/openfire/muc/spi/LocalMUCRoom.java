@@ -437,7 +437,7 @@ public class LocalMUCRoom implements MUCRoom, GroupEventListener {
     @Override
     public void setEmptyDate(Date emptyDate) {
         
-        if (!JiveGlobals.getBooleanProperty("xmpp.muc.cleanup",true))
+        if (JiveGlobals.getBooleanProperty("xmpp.muc.keep_from_cleanup",true))
         {
             this.emptyDate = null;  
             MUCPersistenceManager.updateRoomEmptyDate(this);
