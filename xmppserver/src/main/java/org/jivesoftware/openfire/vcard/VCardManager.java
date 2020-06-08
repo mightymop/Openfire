@@ -34,8 +34,6 @@ import org.jivesoftware.openfire.vcard.xep0398.PEPAvatar;
 import org.jivesoftware.util.AlreadyExistsException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.NotFoundException;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
 import org.jivesoftware.util.SystemProperty;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
