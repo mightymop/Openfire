@@ -34,6 +34,8 @@ import org.jivesoftware.openfire.vcard.xep0398.PEPAvatar;
 import org.jivesoftware.util.AlreadyExistsException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.NotFoundException;
+import org.jivesoftware.util.PropertyEventDispatcher;
+import org.jivesoftware.util.PropertyEventListener;
 import org.jivesoftware.util.SystemProperty;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
@@ -296,7 +298,7 @@ public class VCardManager extends BasicModule implements ServerFeaturesProvider 
     @Override
     public Iterator<String> getFeatures()
     {
-        if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false))
+        if (PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue())
         {
             ArrayList<String> features = new ArrayList<String>();
             features.add("vcard-temp");

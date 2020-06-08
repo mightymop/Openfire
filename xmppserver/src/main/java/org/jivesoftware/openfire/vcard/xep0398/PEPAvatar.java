@@ -25,6 +25,7 @@ import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.openfire.vcard.PhotoResizer;
 import org.jivesoftware.util.Base64;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.SystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.IQ;
@@ -51,10 +52,18 @@ public class PEPAvatar
     public static String NAMESPACE_VCARDUPDATE = "vcard-temp:x:update";
     public static String NAMESPACE_PUBSUB = "http://jabber.org/protocol/pubsub";
 
-    //Propertystring for JiveGlobals
-    public static String PROPERTY_ENABLE_XEP398 = "xmpp.avatarconversion.enabled";
-    public static String PROPERTY_DELETE_OTHER_AVATAR = "xmpp.deleteotheravatar.enabled";
-
+    public static final SystemProperty<Boolean> XMPP_AVATARCONVERSION_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+            .setKey("xmpp.avatarconversion.enabled")
+            .setDefaultValue(false)
+            .setDynamic(false)
+            .build();
+    
+    public static final SystemProperty<Boolean> XMPP_DELETEOTHERAVATAR_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+            .setKey("xmpp.deleteotheravatar.enabled")
+            .setDefaultValue(false)
+            .setDynamic(false)
+            .build();
+    
     //Constructors
     public PEPAvatar(String id, byte[] image, int height, int width, String mimetype)
     {
@@ -472,7 +481,7 @@ public class PEPAvatar
                 photo=x.addElement("photo");
             }
 
-            if (JiveGlobals.getBooleanProperty(PROPERTY_DELETE_OTHER_AVATAR,false))
+            if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
             {
                 if (publish&&this.id!=null)
                 {

@@ -105,8 +105,8 @@ public class DefaultVCardProvider implements VCardProvider {
                 DbConnectionManager.closeConnection(rs, pstmt, con);
             }
 
-            if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false)&&
-                JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+            if (PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue()&&
+                    PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
             {
                 vCardElement=mergePEPAvatarIntoVCard(username,vCardElement);
             }
@@ -188,11 +188,11 @@ public class DefaultVCardProvider implements VCardProvider {
         }
 
         Element vCardElementToSaveToDB = vCardElement.createCopy();
-        boolean xep398=JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false);
+        boolean xep398=PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue();
         if (xep398)
         {
             vCardElement=mergePEPAvatarIntoVCard(username,vCardElement);
-            if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+            if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
             {
                 if (vCardElementToSaveToDB.element("PHOTO")!=null)
                 {
@@ -223,7 +223,7 @@ public class DefaultVCardProvider implements VCardProvider {
             pstmt.setString(1, username);
             if (xep398)
             {
-                if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+                if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
                 {
                     pstmt.setString(2, vCardElementToSaveToDB.asXML());
                 }
@@ -255,11 +255,11 @@ public class DefaultVCardProvider implements VCardProvider {
         }
 
         Element vCardElementToSaveToDB = vCardElement.createCopy();
-        boolean xep398=JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false);
+        boolean xep398=PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue();
         if (xep398)
         {
             updatePEPAvatarFromVCard(username,vCardElement);
-            if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+            if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
             {
                 if (vCardElementToSaveToDB.element("PHOTO")!=null)
                 {
@@ -290,7 +290,7 @@ public class DefaultVCardProvider implements VCardProvider {
 
             if (xep398)
             {
-                if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+                if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
                 {
                     pstmt.setString(1, vCardElementToSaveToDB.asXML());
                 }
@@ -318,8 +318,8 @@ public class DefaultVCardProvider implements VCardProvider {
 
     @Override
     public void deleteVCard(String username) {
-        if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false)&&
-            JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+        if (PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue()&&
+                PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
         {
             deletePEPAvatarFromVCard(username);
         }

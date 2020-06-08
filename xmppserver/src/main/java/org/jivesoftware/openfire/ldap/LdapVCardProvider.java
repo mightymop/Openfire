@@ -253,7 +253,7 @@ public class LdapVCardProvider implements VCardProvider, PropertyEventListener {
             }
         }
 
-        if (!JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false))
+        if (!PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue())
         {
             if ( JiveGlobals.getBooleanProperty( PhotoResizer.PROPERTY_RESIZE_ON_CREATE, PhotoResizer.PROPERTY_RESIZE_ON_CREATE_DEFAULT ) )
             {
@@ -295,7 +295,7 @@ public class LdapVCardProvider implements VCardProvider, PropertyEventListener {
             return vcard;
         }
         // Now we need to check that the LDAP vcard doesn't have a PHOTO element that's filled in.
-        if (!JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false))
+        if (!PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue())
         {
             if (!((vcard.element("PHOTO") == null || vcard.element("PHOTO").element("BINVAL") == null || vcard.element("PHOTO").element("BINVAL").getText().matches("\\s*")))) 
             {
@@ -406,7 +406,7 @@ public class LdapVCardProvider implements VCardProvider, PropertyEventListener {
             Log.debug("LdapVCardProvider: User has no LDAP vcard, nothing they can change, rejecting.");
             return false;
         }
-        if (!JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false))
+        if (!PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue())
         {
             // If the LDAP vcard has a non-empty PHOTO element set, then there is literally no way this will be accepted.
             Element ldapPhotoElem = ldapvCard.element("PHOTO");

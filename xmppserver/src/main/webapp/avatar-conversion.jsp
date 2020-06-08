@@ -52,8 +52,8 @@
 
    
     if (update) {
-        JiveGlobals.setProperty( PEPAvatar.PROPERTY_ENABLE_XEP398,  avatarconversionEnabled?"true":"false");
-        JiveGlobals.setProperty( PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR, deleteotherEnabled?"true":"false");
+        PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.setValue(avatarconversionEnabled);
+        PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.setValue(deleteotherEnabled);
         // Log the event
         webManager.logEvent((avatarconversionEnabled ? "enabled" : "disabled")+" avatarconversion", null);
     %>
@@ -72,8 +72,8 @@
     }
 
     // Set page vars
-    avatarconversionEnabled = Boolean.parseBoolean(JiveGlobals.getProperty( PEPAvatar.PROPERTY_ENABLE_XEP398,"false"));
-    deleteotherEnabled = Boolean.parseBoolean(JiveGlobals.getProperty( PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,"false"));
+    avatarconversionEnabled = PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue();
+    deleteotherEnabled = PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue();
 %>
 
 <p>
@@ -91,8 +91,7 @@
         <tbody>
             <tr valign="top">
                 <td width="1%" nowrap>
-                    <input type="radio" name="avatarconversionEnabled" value="true" id="rb01"
-                     <%= (avatarconversionEnabled ? "checked" : "") %>>
+                    <input type="radio" name="avatarconversionEnabled" value="true" id="rb01" ${avatarconversionEnabled ? "checked" : ""}>
                 </td>
                 <td width="99%">
                     <label for="rb01">
@@ -103,8 +102,7 @@
             </tr>
             <tr valign="top">
                 <td width="1%" nowrap>
-                    <input type="radio" name="avatarconversionEnabled" value="false" id="rb02"
-                     <%= (!avatarconversionEnabled ? "checked" : "") %>>
+                    <input type="radio" name="avatarconversionEnabled" value="false" id="rb02" ${avatarconversionEnabled ? "" : "checked"}>
                 </td>
                 <td width="99%">
                     <label for="rb02">
@@ -115,8 +113,7 @@
             </tr>
             <tr valign="top">
                 <td width="1%" nowrap>
-                    <input type="checkbox" name="deleteotherEnabled" id="deleteotherEnabled"
-                     <%= (deleteotherEnabled ? "checked" : "") %>>
+                    <input type="checkbox" name="deleteotherEnabled" id="deleteotherEnabled"  ${deleteotherEnabled ? "" : "checked"}>                    
                 </td>
                 <td width="99%">
                     <label for="rb02">

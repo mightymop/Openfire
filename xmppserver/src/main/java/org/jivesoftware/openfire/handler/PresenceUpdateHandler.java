@@ -305,7 +305,7 @@ public class PresenceUpdateHandler extends BasicModule implements ChannelHandler
                 return;
             }
 
-            if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_ENABLE_XEP398,false))
+            if (PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue())
             {
                 if (update.isAvailable())
                 {
@@ -357,7 +357,7 @@ public class PresenceUpdateHandler extends BasicModule implements ChannelHandler
                     photo = x.addElement("photo");
                 }
 
-                if (JiveGlobals.getBooleanProperty(PEPAvatar.PROPERTY_DELETE_OTHER_AVATAR,false))
+                if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
                 {
                     if (pavatar.getId()!=null)
                         photo.setText(pavatar.getId());
