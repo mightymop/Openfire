@@ -55,13 +55,13 @@ public class PEPAvatar
     public static final SystemProperty<Boolean> XMPP_AVATARCONVERSION_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
             .setKey("xmpp.avatarconversion.enabled")
             .setDefaultValue(false)
-            .setDynamic(true)
+            .setDynamic(false)
             .build();
     
     public static final SystemProperty<Boolean> XMPP_DELETEOTHERAVATAR_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
             .setKey("xmpp.deleteotheravatar.enabled")
             .setDefaultValue(false)
-            .setDynamic(true)
+            .setDynamic(false)
             .build();
     
     //Constructors
