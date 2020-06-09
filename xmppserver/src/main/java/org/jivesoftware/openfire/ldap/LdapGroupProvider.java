@@ -23,6 +23,7 @@ import org.jivesoftware.openfire.group.GroupNotFoundException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveConstants;
+import org.jivesoftware.util.JiveGlobals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -93,6 +95,19 @@ public class LdapGroupProvider extends AbstractGroupProvider {
         }
     }
 
+    public String genNextRangePart(int lasthigh)
+    {
+        String groupMemberField = manager.getGroupMemberField();
+
+        int pageSize = JiveGlobals.getIntProperty("ldap.pagedResultsSize",1500);
+        if (pageSize==-1)
+        {
+            pageSize=1500;
+        }
+
+        return groupMemberField+";range=" + String.valueOf(lasthigh+1) + "-" + String.valueOf(lasthigh + pageSize+1);
+    }
+
     /**
      * Reads the group with the given DN
      *
@@ -124,7 +139,120 @@ public class LdapGroupProvider extends AbstractGroupProvider {
             ctx = manager.getContext(baseDN);
             Attributes attrs = ctx.getAttributes(relativeDN, standardAttributes);
 
-            return processGroup(ctx, attrs, membersToIgnore);
+            boolean paging = false;
+
+            NamingEnumeration<? extends Attribute> i = attrs.getAll();
+            int rangehigh=-1;
+            int oldrangehigh=-1;
+
+            while (i.hasMore())
+            {
+                Attribute attribute = i.next();
+                String key = attribute.getID().toLowerCase();
+                if (key.startsWith(manager.getGroupMemberField())&&key.contains(";range="))
+                {
+                    rangehigh = Integer.parseInt(key.substring(key.indexOf(";range=")+";range=".length()).split("\\-")[1]);
+
+                    paging=true;
+                    Log.debug("using range retrival for group: {}", relativeDN);
+                    break;
+                }
+            }
+
+            if (!paging)
+            {
+                return processGroup(ctx, attrs, membersToIgnore);
+            }
+            else
+            {
+                //retrieve first part with attributes that came from AD
+                ArrayList<String> stdAttr=new ArrayList<String>();
+                for (int n=0;n<standardAttributes.length;n++)
+                {
+                    if (!standardAttributes[n].contains(manager.getGroupMemberField()))
+                    {
+                        stdAttr.add(standardAttributes[n]);
+                    }
+                }
+
+                stdAttr.add(manager.getGroupMemberField()+";range=0-"+String.valueOf(rangehigh));
+                Log.debug("first range will be 0-{}",rangehigh);
+
+                //reload Attributes as said in MSDN will prepare range retrival
+                attrs = ctx.getAttributes(relativeDN, stdAttr.toArray(new String[stdAttr.size()]));
+
+                //get the first part of the group
+                Group tmpGroup = processGroup(ctx, attrs, membersToIgnore);
+                Collection<JID> admins = tmpGroup.getAdmins();
+                String description = tmpGroup.getDescription();
+                String name = tmpGroup.getName();
+                ArrayList<JID> members = new ArrayList<JID>();
+                members.addAll(tmpGroup.getMembers());
+
+                //now load the rest
+                do
+                {
+                    try
+                    {
+                        stdAttr.clear();
+                        for (int n=0;n<standardAttributes.length;n++)
+                        {
+                            if (!standardAttributes[n].contains(manager.getGroupMemberField()))
+                            {
+                                stdAttr.add(standardAttributes[n]);
+                            }
+                        }
+                        //Add the next range rangehigh+1 to rangehigh+1+ldap.pagedResultsSize
+                        stdAttr.add(genNextRangePart(rangehigh));
+
+                        attrs = ctx.getAttributes(relativeDN, stdAttr.toArray(new String[stdAttr.size()]));
+                        NamingEnumeration<? extends Attribute> inext = attrs.getAll();
+                        while (inext.hasMore())
+                        {
+                            Attribute attribute = inext.next();
+                            String key = attribute.getID().toLowerCase();
+                            if (key.startsWith(manager.getGroupMemberField())&&key.contains(";range="))
+                            {
+                                //get next rangehigh
+                                oldrangehigh=rangehigh;
+                                if (key.substring(key.indexOf(";range=")+";range=".length()).split("\\-")[1].equals("*")==false)
+                                {
+                                    //we will have a minimum of two more ranges
+                                    rangehigh = Integer.parseInt(key.substring(key.indexOf(";range=")+";range=".length()).split("\\-")[1]);
+                                }
+                                else
+                                {
+                                    //* means to the end of the range
+                                    rangehigh = -1;
+                                }
+                                break;
+                            }
+                        }
+
+                        //load the group members now
+                        Log.debug("next range will be {}-{}",oldrangehigh,rangehigh!=-1?rangehigh:"*");
+
+                        tmpGroup=processGroup(ctx, attrs, membersToIgnore);
+                        if (tmpGroup!=null&&tmpGroup.getMembers().size()>0)
+                        {
+                            members.addAll(tmpGroup.getMembers());
+                        }
+                        else
+                        {
+                            // no next found
+                            break;
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        Log.debug("error while reading the ldap group with range retrival",e); // no next found, cause of missing attribute
+                        break;
+                    }
+                }while (rangehigh!=-1);  //The last part was received
+
+                return new Group(name, description, members, admins);
+            }
         }
         finally {
             try {
@@ -256,13 +384,22 @@ public class LdapGroupProvider extends AbstractGroupProvider {
         filter.append(MessageFormat.format(manager.getGroupSearchFilter(), "*"));
         filter.append('(').append(key).append('=').append(LdapManager.sanitizeSearchFilter(value, false));
         filter.append("))");
-        if (Log.isDebugEnabled()) {
-            Log.debug("Trying to find group names using query: " + filter.toString());
+
+        String ldapfilter = filter.toString();
+        String searchRangeStr = ";range=";
+        if (ldapfilter.contains(searchRangeStr))
+        {
+            ldapfilter=ldapfilter.substring(0,ldapfilter.indexOf(searchRangeStr))+
+                    ldapfilter.substring(ldapfilter.indexOf("=", 
+                            ldapfilter.indexOf(searchRangeStr)+searchRangeStr.length()));
         }
+
+        Log.debug("Trying to find group names using query: {}", ldapfilter);
+
         // Perform the LDAP query
         return manager.retrieveList(
                 manager.getGroupNameField(),
-                filter.toString(),
+                ldapfilter,
                 -1,
                 -1,
                 null
@@ -341,6 +478,22 @@ public class LdapGroupProvider extends AbstractGroupProvider {
         Attribute memberField = a.get(manager.getGroupMemberField());
 
         Log.debug("Loading members of group: {}", name);
+
+        if (memberField==null)
+        {
+            NamingEnumeration<? extends Attribute> i = a.getAll();
+
+            while (i.hasMore())
+            {
+                Attribute attribute = i.next();
+                String key = attribute.getID().toLowerCase();
+                if (key.startsWith(manager.getGroupMemberField()))
+                {
+                    memberField=attribute;
+                    break;
+                }
+            }
+        }
 
         if (memberField != null) {
             NamingEnumeration ne = memberField.getAll();
