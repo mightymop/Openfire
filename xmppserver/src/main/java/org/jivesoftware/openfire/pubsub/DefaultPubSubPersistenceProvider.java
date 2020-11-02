@@ -32,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -58,12 +60,12 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
 			"ORDER BY creationDate DESC LIMIT ?) AS noDelete " +
 			"ON ofPubsubItem.id = noDelete.id WHERE noDelete.id IS NULL AND " +
 			"ofPubsubItem.serviceID = ? AND nodeID = ?";
-    
+
     private static final String PURGE_FOR_SIZE_ORACLE =
             "DELETE from ofPubsubItem where id in " +
             "(select ofPubsubItem.id FROM ofPubsubItem LEFT JOIN " +
-            "(SELECT * from (SELECT id FROM ofPubsubItem WHERE serviceID=? AND nodeID=? " +
-            "ORDER BY creationDate DESC) where rownum < ? order by rownum) noDelete " +
+            "(SELECT id FROM ofPubsubItem WHERE serviceID=? AND nodeID=? " +
+            "ORDER BY creationDate DESC FETCH FIRST ? ROWS ONLY) noDelete " +
             "ON ofPubsubItem.id = noDelete.id WHERE noDelete.id IS NULL " +
             "AND ofPubsubItem.serviceID = ? AND nodeID = ?)";
 
@@ -156,6 +158,8 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
 	private static final String LOAD_NODE_SUBSCRIPTION = LOAD_SUBSCRIPTIONS_BASE + "AND nodeID=? AND id=?";
 	private static final String LOAD_NODE_SUBSCRIPTIONS = LOAD_SUBSCRIPTIONS_BASE + "AND nodeID=?";
 	private static final String LOAD_SUBSCRIPTIONS = LOAD_SUBSCRIPTIONS_BASE + "ORDER BY nodeID";
+
+    private static final String FIND_SUBCRIBED_NODES = "SELECT serviceID, nodeID, jid FROM ofPubsubSubscription WHERE jid LIKE ? AND state LIKE ?";
 
     private static final String ADD_SUBSCRIPTION =
             "INSERT INTO ofPubsubSubscription (serviceID, nodeID, id, jid, owner, state, " +
@@ -735,7 +739,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
             JID creator = new JID(rs.getString(22));
 
             String parent = decodeNodeID(rs.getString(5));
-            if (parent != null && !parent.isEmpty()) {
+            if (parent != null) { // beware: 'empty string' is a valid node ID! OF-2084
                 Node.UniqueIdentifier parentId = new Node.UniqueIdentifier( serviceId, parent );
                 parentMappings.put(nodeId, parentId);
             }
@@ -894,6 +898,58 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
 			DbConnectionManager.closeConnection(rs, pstmt, con);
 		}
 	}
+
+    @Override
+    @Nonnull
+    public Set<Node.UniqueIdentifier> findDirectlySubscribedNodes(@Nonnull JID address)
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        Set<Node.UniqueIdentifier> result = new HashSet<>();
+
+        try
+        {
+            con = DbConnectionManager.getConnection();
+
+            // Get subscriptions to all nodes
+            pstmt = con.prepareStatement(FIND_SUBCRIBED_NODES);
+            // Match subscriptions that use a bare JID, or full JIDs matching the bare JID search argument.
+            pstmt.setString( 1, address.toBareJID() + '%'); // note that the '%' operator matches zero or more characters. Exact matches included.
+            pstmt.setString( 2, NodeSubscription.State.subscribed.name() );
+            rs = pstmt.executeQuery();
+            while (rs.next())
+            {
+                final String serviceID = rs.getString("serviceID");
+                final String nodeID = rs.getString("nodeID");
+                try
+                {
+                    final JID jid = new JID(rs.getString("jid"));
+                    if ( jid.getResource() != null && !jid.equals(address))
+                    {
+                        // The subscription is explicit to a _different_ full JID. Do not return this one.
+                        continue;
+                    }
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    log.warn( "Unable to parse value as a JID, for serviceID {}, nodeID {}", serviceID, nodeID);
+                    continue;
+                }
+                final Node.UniqueIdentifier identifier = new Node.UniqueIdentifier(serviceID, nodeID);
+                result.add(identifier);
+            }
+        }
+        catch (SQLException sqle)
+        {
+            log.error("An exception occurred while finding subscribed nodes for {}.", address, sqle);
+        }
+        finally
+        {
+            DbConnectionManager.closeConnection(rs, pstmt, con);
+        }
+        return result;
+    }
 
     private void loadSubscriptions(Map<Node.UniqueIdentifier, Node> nodes, ResultSet rs) {
         try {
@@ -1165,7 +1221,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
     {
         log.trace( "Creating published item: {} (write to database)", item.getUniqueIdentifier() );
 
-        Connection con;
+        Connection con = null;
         PreparedStatement pstmt = null;
         try {
             con = DbConnectionManager.getConnection();
@@ -1180,7 +1236,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
         } catch (SQLException ex) {
             log.error("Published item could not be created in database: {}\n{}", item.getUniqueIdentifier(), item.getPayloadXML(), ex);
         } finally {
-            DbConnectionManager.closeStatement(pstmt);
+            DbConnectionManager.closeConnection(pstmt, con);
         }
     }
 
@@ -1188,7 +1244,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
     {
         log.trace( "Updating published item: {} (write to database)", item.getUniqueIdentifier() );
 
-        Connection con;
+        Connection con = null;
         PreparedStatement pstmt = null;
         try {
             con = DbConnectionManager.getConnection();
@@ -1203,7 +1259,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
         } catch (SQLException ex) {
             log.error("Published item could not be updated in database: {}\n{}", item.getUniqueIdentifier(), item.getPayloadXML(), ex);
         } finally {
-            DbConnectionManager.closeStatement(pstmt);
+            DbConnectionManager.closeConnection(pstmt, con);
         }
     }
 
@@ -1243,7 +1299,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
 
     @Override
     public void removePublishedItem(PublishedItem item) {
-        Connection con;
+        Connection con = null;
         PreparedStatement pstmt = null;
         try {
             con = DbConnectionManager.getConnection();
@@ -1255,7 +1311,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
         } catch (SQLException ex) {
             log.error("Failed to delete published item from DB: {}", item.getUniqueIdentifier(), ex);
         } finally {
-            DbConnectionManager.closeStatement(pstmt);
+            DbConnectionManager.closeConnection(pstmt, con);
         }
     }
 
@@ -1349,7 +1405,7 @@ public class DefaultPubSubPersistenceProvider implements PubSubPersistenceProvid
 
         try
         {
-            log.debug( "Try to add the pending items as a dtabase batch." );
+            log.debug( "Try to add the pending items as a database batch." );
             removePublishedItems( con, delList, true ); // delete first (to remove possible duplicates), then add new items
             savePublishedItems( con, addList, true );
         }
