@@ -589,7 +589,8 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
                         item.addAttribute( "role", "none" );
                         fragment.addElement( "status" ).addAttribute( "code", "332" );
 
-                        // Make sure that the presence change for each user is only sent to that user (and not broadcasted in the room)!
+                        // Make sure that the presence change for each user is only sent to that user (and not broadcast in the room)!
+                        // Not needed to create a defensive copy of the stanza. It's not used anywhere else.
                         role.send( presence );
                     }
                 }
@@ -805,7 +806,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
         boolean loaded = false;
         LocalMUCRoom room = localMUCRoomManager.getRoom(roomName);
         if (room == null) {
-            // Check if the room exists in the databclase and was not present in memory
+            // Check if the room exists in the database and was not present in memory
             synchronized (roomBaseMutex.intern(roomName)) {
                 room = localMUCRoomManager.getRoom(roomName);
                 if (room == null) {
@@ -1447,8 +1448,8 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
      * @return An Archiver instance, never null.
      */
     @Override
-    public Archiver getArchiver() {
-        Archiver result = this.archiver;
+    public Archiver<ConversationLogEntry> getArchiver() {
+        Archiver<ConversationLogEntry> result = this.archiver;
         if (result == null) {
             synchronized (this) {
                 result = this.archiver;

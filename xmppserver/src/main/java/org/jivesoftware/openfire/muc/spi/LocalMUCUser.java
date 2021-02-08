@@ -224,9 +224,7 @@ public class LocalMUCUser implements MUCUser
      *   <li>Otherwise, rewrite the sender address and send to the room.</li>
      * </ul>
      *
-     * @param packet          The stanza to route
-     * @param roomName        The name of the room that the stanza was addressed to.
-     * @param preExistingRole The role of this user in the addressed room prior to processing of this stanza, if any.
+     * @param packet The stanza to route
      */
     @Override
     public void process( Packet packet ) throws UnauthorizedException, PacketException
@@ -248,7 +246,7 @@ public class LocalMUCUser implements MUCUser
 
         lastPacketTime = System.currentTimeMillis();
 
-        StanzaIDUtil.ensureUniqueAndStableStanzaID(packet, packet.getTo());
+        StanzaIDUtil.ensureUniqueAndStableStanzaID(packet, packet.getTo().asBareJID());
 
         // Determine if this user has a pre-existing role in the addressed room.
         final MUCRole preExistingRole = roles.get(roomName);
@@ -373,10 +371,10 @@ public class LocalMUCUser implements MUCUser
             return;
         }
 
-        // An occupant is trying to send a private, send public message, invite someone to the room or reject an invitation.
+        // An occupant is trying to send a private message, send public message, invite someone to the room or reject an invitation.
         final Message.Type type = packet.getType();
-        String nickname = packet.getTo().getResource();
-        if ( nickname == null || nickname.trim().length() == 0 )
+            String nickname = packet.getTo().getResource();
+            if ( nickname == null || nickname.trim().length() == 0 )
         {
             nickname = null;
         }
@@ -388,7 +386,7 @@ public class LocalMUCUser implements MUCUser
             return;
         }
 
-        // Private message (not addressed to a specific occupant)
+        // Private message (addressed to a specific occupant)
         if ( nickname != null && (Message.Type.chat == type || Message.Type.normal == type) )
         {
             processPrivateMessage(packet, roomName, preExistingRole);

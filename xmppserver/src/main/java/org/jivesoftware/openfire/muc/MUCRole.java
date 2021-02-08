@@ -47,6 +47,8 @@ public interface MUCRole {
     /**
      * Obtain the current presence status of a user in a chatroom.
      *
+     * The 'from' address of the presence stanza is guaranteed to reflect the room role of this role.
+     *
      * @return The presence of the user in the room.
      */
     Presence getPresence();
@@ -209,7 +211,12 @@ public interface MUCRole {
     /**
      * Sends a packet to the user.
      *
+     * Note that sending a packet can modify it (notably, the 'to' address can be changed. If this is undesired (for
+     * example, because post-processing should not expose the modified 'to' address), then a copy of the original
+     * stanza should be provided as an argument to this method.
+     *
      * @param packet The packet to send
+     * @see <a href="https://igniterealtime.atlassian.net/browse/OF-2163">issue OF-2163</a>
      */
     void send( Packet packet );
 
