@@ -53,15 +53,15 @@ public class PEPAvatar
     public static String NAMESPACE_PUBSUB = "http://jabber.org/protocol/pubsub";
 
     public static final SystemProperty<Boolean> XMPP_AVATARCONVERSION_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
-            .setKey("xmpp.avatarconversion.enabled")
+            .setKey("xmpp.xep398.enabled")
             .setDefaultValue(false)
-            .setDynamic(false)
+            .setDynamic(true)
             .build();
     
     public static final SystemProperty<Boolean> XMPP_DELETEOTHERAVATAR_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
-            .setKey("xmpp.deleteotheravatar.enabled")
+            .setKey("xmpp.xep398.onlypep")
             .setDefaultValue(false)
-            .setDynamic(false)
+            .setDynamic(true)
             .build();
     
     //Constructors

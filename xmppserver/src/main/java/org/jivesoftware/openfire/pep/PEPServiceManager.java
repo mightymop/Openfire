@@ -370,57 +370,66 @@ public class PEPServiceManager implements EntityCapabilitiesListener {
 
         if (PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue()&&iq!=null)
         {
-            Element childElement = iq.getChildElement();
-            if (childElement!=null)
-            {
-                String childns = childElement.attributeValue("xmlns");
+            processXEP398(iq);
+        }
+    }
 
-                //Check if IQ stanza is a pep avatar metadata node
-                if (childns!=null)
-                {
-                    //metadata node with new item
-                    if (childns.equalsIgnoreCase("http://jabber.org/protocol/pubsub")&&
-                       (childElement.element("publish")!=null&&
-                        childElement.element("publish").attributeValue("xmlns").
-                        equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA)))
+    private void processXEP398(IQ iq)
+    {
+
+        Element childElement = iq.getChildElement();
+        if (childElement!=null)
+        {
+            String childns = childElement.attributeValue("xmlns");
+
+            //Check if IQ stanza is a pep avatar metadata node
+            if (childns!=null)
+            {
+                //metadata node with new item
+                if (childns.equalsIgnoreCase("http://jabber.org/protocol/pubsub")&&
+                   (childElement.element("publish")!=null&&
+                    childElement.element("publish").attributeValue("xmlns").
+                    equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA)))
+                    {
+                        Element publish = childElement.element("publish");
+                        Element item = publish.element("item");
+                        if (item!=null)
                         {
-                            Element publish = childElement.element("publish");
-                            Element item = publish.element("item");
-                            if (item!=null)
+                            Element metadata=item.element("metadata");
+                            if (metadata!=null&&metadata.element("info")!=null)
                             {
-                                Element metadata=item.element("metadata");
-                                if (metadata!=null&&metadata.element("info")!=null)
+                                if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
                                 {
-                                    if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
-                                    {
-                                        sendVCardPresence(iq.getFrom(),metadata.element("info").attributeValue("id"));
-                                    }
-                                    else
-                                    {
-                                        PEPAvatar pavatar = PEPAvatar.load(iq.getFrom().getNode());
-                                        sendVCardPresence(iq.getFrom(),PEPAvatar.getSHA1FromShrinkedImage(pavatar.getMimetype(),pavatar.getImage()));
-                                    }
+                                    sendVCardPresence(iq.getFrom(),metadata.element("info").attributeValue("id"));
+                                }
+                                else
+                                {
+                                    PEPAvatar pavatar = PEPAvatar.load(iq.getFrom().getNode());
+                                    sendVCardPresence(iq.getFrom(),PEPAvatar.getSHA1FromShrinkedImage(pavatar.getMimetype(),pavatar.getImage()));
                                 }
                             }
                         }
-                        else //metadatanode which should be removed
-                            if (childns.equalsIgnoreCase("http://jabber.org/protocol/pubsub")&&
-                               ((childElement.element("retract")!=null&&
-                                childElement.element("retract").attributeValue("xmlns").
-                                equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA))||
-                                (childElement.element("delete")!=null&&
-                                 childElement.element("delete").attributeValue("xmlns").
-                                 equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA))))
+                    }
+                    else 
+                    {//metadatanode which should be removed
+                        if (childns.equalsIgnoreCase("http://jabber.org/protocol/pubsub")&&
+                           ((childElement.element("retract")!=null&&
+                            childElement.element("retract").attributeValue("xmlns").
+                            equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA))||
+                            (childElement.element("delete")!=null&&
+                             childElement.element("delete").attributeValue("xmlns").
+                             equalsIgnoreCase(PEPAvatar.NAMESPACE_METADATA))))
+                            {
+                                if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
                                 {
-                                    if (PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue())
-                                    {
-                                        deleteVCardAvatar(iq.getFrom());
-                                    }
-                                    sendVCardPresence(iq.getFrom(),null);
+                                    deleteVCardAvatar(iq.getFrom());
                                 }
-                }
+                                sendVCardPresence(iq.getFrom(),null);
+                            }
+                    }
             }
         }
+
     }
 
     public boolean hasCachedService(JID owner) {

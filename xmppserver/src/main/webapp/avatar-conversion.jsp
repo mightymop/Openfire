@@ -36,8 +36,10 @@
 
 <%  // Get parameters:
     boolean update = request.getParameter("update") != null;
-    boolean avatarconversionEnabled = ParamUtils.getBooleanParameter(request,"avatarconversionEnabled");
-    boolean deleteotherEnabled = ParamUtils.getBooleanParameter(request,"deleteotherEnabled");
+
+    boolean avatarconversionEnabled = ParamUtils.getParameter(request,"avatarconversionEnabled")!=null&&ParamUtils.getParameter(request,"avatarconversionEnabled").equals("on")?true:false;
+    boolean deleteotherEnabled = ParamUtils.getParameter(request,"deleteotherEnabled")!=null&&ParamUtils.getParameter(request,"deleteotherEnabled").equals("on")?true:false;
+
     Cookie csrfCookie = CookieUtils.getCookie(request, "csrf");
     String csrfParam = ParamUtils.getParameter(request, "csrf");
 
@@ -50,7 +52,6 @@
     CookieUtils.setCookie(request, response, "csrf", csrfParam, -1);
     pageContext.setAttribute("csrf", csrfParam);
 
-   
     if (update) {
         PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.setValue(avatarconversionEnabled);
         PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.setValue(deleteotherEnabled);
@@ -74,49 +75,35 @@
     // Set page vars
     avatarconversionEnabled = PEPAvatar.XMPP_AVATARCONVERSION_ENABLED.getValue();
     deleteotherEnabled = PEPAvatar.XMPP_DELETEOTHERAVATAR_ENABLED.getValue();
-%>
 
-<p>
-<fmt:message key="avatarconversion.settings.info" />
-</p>
+%>
 
 <!-- BEGIN 'Set Avatarconversion Policy' -->
 <form action="avatar-conversion.jsp">
     <input type="hidden" name="csrf" value="${csrf}">
     <div class="jive-contentBoxHeader">
-        <fmt:message key="avatarconversion.settings.policy" />
+        <fmt:message key="avatarconversion.settings.title" />
     </div>
     <div class="jive-contentBox">
         <table cellpadding="3" cellspacing="0" border="0">
         <tbody>
             <tr valign="top">
                 <td width="1%" nowrap>
-                    <input type="radio" name="avatarconversionEnabled" value="true" id="rb01" ${avatarconversionEnabled ? "checked" : ""}>
+                    <input type="checkbox" name="avatarconversionEnabled" id="avatarconversionEnabled"  <%=(avatarconversionEnabled?"checked" : "")%>>
                 </td>
                 <td width="99%">
-                    <label for="rb01">
-                    <b><fmt:message key="avatarconversion.settings.enable" /></b> -
-                    <fmt:message key="avatarconversion.settings.enable_info" />
+                    <label for="avatarconversionEnabled">
+                     <b><fmt:message key="avatarconversion.settings.enable" /></b> -
+                     <fmt:message key="avatarconversion.settings.enable_info" />
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <td width="1%" nowrap>
-                    <input type="radio" name="avatarconversionEnabled" value="false" id="rb02" ${avatarconversionEnabled ? "" : "checked"}>
+                    <input type="checkbox" name="deleteotherEnabled" id="deleteotherEnabled"  <%=(deleteotherEnabled?"checked" : "")%>>
                 </td>
                 <td width="99%">
-                    <label for="rb02">
-                    <b><fmt:message key="avatarconversion.settings.disable" /></b> -
-                    <fmt:message key="avatarconversion.settings.disable_info" />
-                    </label>
-                </td>
-            </tr>
-            <tr valign="top">
-                <td width="1%" nowrap>
-                    <input type="checkbox" name="deleteotherEnabled" id="deleteotherEnabled"  ${deleteotherEnabled ? "" : "checked"}>                    
-                </td>
-                <td width="99%">
-                    <label for="rb02">
+                    <label for="deleteotherEnabled">
                      <b><fmt:message key="avatarconversion.settings.deleteotheravatar" /></b> -
                      <fmt:message key="avatarconversion.settings.deleteotheravatar_info" />
                     </label>
