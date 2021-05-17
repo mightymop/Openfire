@@ -90,6 +90,23 @@ public class LdapUserProvider implements UserProvider {
 
     @Override
     public User loadUser(String username) throws UserNotFoundException {
+
+        String usernamefilter = JiveGlobals.getProperty("ldap.usernamefilter",null);
+        if (usernamefilter!=null&&usernamefilter.trim().length()>0)
+        {
+            String testusername = username;
+
+            if(testusername.contains("@")) {
+                testusername = testusername.substring(0,testusername.lastIndexOf("@"));
+            }
+
+            if (!testusername.matches(usernamefilter)) // "[a-z-]+[.]+[a-z-]+[0-9]*"
+            {
+                Log.error("USERNAME IS NOT VALID: "+testusername);
+                throw new UserNotFoundException("USERNAME IS NOT VALID: " + testusername);
+            }
+        }
+
         if(username.contains("@")) {
             if (!XMPPServer.getInstance().isLocal(new JID(username))) {
                 throw new UserNotFoundException("Cannot load user of remote server: " + username);
