@@ -88,6 +88,13 @@ jobs:
           name: aioxmpp test output
           path: aioxmpp/output
 
+      - name: Expose openfire output
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: openfire logs
+          path: distribution/target/distribution-base/logs/*
+
   check_branch:
     runs-on: ubuntu-latest
     outputs:
@@ -154,7 +161,7 @@ jobs:
           chmod +x distribution/target/distribution-base/bin/openfire.sh
           chmod +x ./runIntegrationTests
       - name: Run smack tests
-        run: ./runIntegrationTests -d -l -i 127.0.0.1 || ./runIntegrationTests -d -l -i 127.0.0.1 || ./runIntegrationTests -d -l -i 127.0.0.1 # Try tests a few times, in case of flakiness
+        run: ./runIntegrationTests -d -l -i 127.0.0.1
 
   publish-maven:
 
